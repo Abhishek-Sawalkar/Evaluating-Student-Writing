@@ -1,0 +1,22 @@
+This is a great question. The five main areas to conduct experiments are:
+
+1. Preprocess and Feature Engineering
+for example, maybe the model doesn't recognize the return character \n and we can introduce a new token
+OR, for example try using IO targets instead of NIO targets
+2. Data Augmentation and External Dataset
+for example, try augmentation like random swapping sentences, or replacing words with synonyms.
+OR, for example search the internet for helpful external datasets to pretrain with, or supplement training with, or pseudo label with, etc
+3. Model Architecture and Loss
+for example, our NER head can predict Lead and Position first. And then the other labels can use these predictions plus LongFormer features to make their predictions.
+OR for example, we can try predicting Lead, Position, and Concluding Statement with a QA head. And the others with a NER head.
+OR for example, loss can incorporate predictions of neighbors and width of predicted spans
+OR for example, modify LongFormer's attention to use global attention explained here
+4. Train Schedule, Optimizer, etc.
+for example, we can try different batch sizes and learning rate schedules
+OR for example, we can try different optimizers like AdamW, or SGD
+5. Post Process
+for example, we can EDA the OOF predictions. Maybe they always predict an extra word after the final period. We can remove this word with PP.
+Furthermore for each of the five categories above, we can try different backbones like BigBird, RoBerta, Bert, etc. For backbones that can only handle 512 tokens wide, there is much experimentation for chunks and strides.
+
+
+For example, if we wish to try RoBerta, it can only handle 512 tokens wide. So we can try training with random crops of 512 tokens. OR we can always provide the first 64 tokens, always provide the last 64 tokens, and random train with different 384 tokens in between. etc etc
