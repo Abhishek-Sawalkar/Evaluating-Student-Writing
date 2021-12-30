@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from dataset import Std_Dataset
+from config import config
 
 from transformers import RobertaTokenizerFast, RobertaForTokenClassification
 from torch.utils.data import Dataset, DataLoader
@@ -11,6 +12,9 @@ class tokenized_dataset(Dataset):
         self.data = dataframe
         self.tokenizer = tokenizer
         self.max_len = max_len
+
+  def __len__(self):
+        return self.len
 
   def __getitem__(self, index):
         # step 1: get the sentence and word labels 
@@ -59,19 +63,15 @@ class tokenized_dataset(Dataset):
         
         return item
 
-def __len__(self):
-        return self.len
 
-
-if __name__=="__main__":
-
+def gen_token():
     train_text_df = pd.read_csv('train_text_df.csv')
     test_text = pd.read_csv('test_text.csv')
 
     # Tokenizer and Model
     std_data = Std_Dataset()
-    tokenizer = RobertaTokenizerFast.from_pretrained('../kaggle/input/roberta-base/')
-    model = RobertaForTokenClassification.from_pretrained('../kaggle/input/roberta-base/', num_labels=len(std_data.output_labels))
+    tokenizer = RobertaTokenizerFast.from_pretrained(config['model_name'])
+    model = RobertaForTokenClassification.from_pretrained(config['model_name'], num_labels=len(std_data.output_labels))
 
     # Dividing the train data into train and test/valid data into 80-20 split.
     data = train_text_df[['text', 'entities']]
@@ -85,17 +85,17 @@ if __name__=="__main__":
     print("TEST Dataset: {}".format(test_dataset.shape))
 
     # Appying the class
-    training_set = tokenized_dataset(train_dataset, tokenizer, 512)
-    testing_set = tokenized_dataset(test_dataset, tokenizer, 512)
+    training_set = tokenized_dataset(train_dataset, tokenizer, config['max_length'])
+    testing_set = tokenized_dataset(test_dataset, tokenizer, config['max_length'])
 
     # Params for dividing the dataset into batches
-    train_params = {'batch_size': 8,
+    train_params = {'batch_size': config['train_batch_size'],
                 'shuffle': True,
                 'num_workers': 1,
                 'pin_memory':True
                 }
 
-    test_params = {'batch_size': 16,
+    test_params = {'batch_size': config['valid_batch_size'],
                     'shuffle': True,
                     'num_workers': 1,
                     'pin_memory':True
@@ -105,6 +105,12 @@ if __name__=="__main__":
     testing_loader = DataLoader(testing_set, **test_params)
 
     # For the hidden test data
-    test_texts_set = tokenized_dataset(test_text, tokenizer, 512)
+    test_texts_set = tokenized_dataset(test_text, tokenizer, config['max_length'])
     test_texts_loader = DataLoader(test_texts_set, **test_params)
+
+    return training_loader, testing_loader, test_texts_loader
+
+
+if __name__=="__main__":
+        gen_token()
     
