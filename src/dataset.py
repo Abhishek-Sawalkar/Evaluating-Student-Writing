@@ -72,8 +72,8 @@ class Std_Dataset:
         # test_texts = self.get_test_text()
         # test_texts.to_csv('test_text.csv')
         
-        train_text_df = pd.read_csv('train_text_df.csv')
-        # train_text_df = get_train_text()
+        # train_text_df = pd.read_csv('train_text_df.csv')
+        train_text_df = self.get_train_text()
 
         self.train_text_df = self.adding_labels(train_text_df, train_df)
         print(train_text_df.head())
