@@ -9,6 +9,12 @@ class Std_Dataset:
         self.test_text_df = pd.DataFrame()
         self.labels_to_ids = {}
         self.ids_to_labels = {}
+        # Labels
+        self.output_labels = ['O', 'B-Lead', 'I-Lead', 'B-Position', 'I-Position', 'B-Claim', 'I-Claim', 'B-Counterclaim', 'I-Counterclaim', 
+                'B-Rebuttal', 'I-Rebuttal', 'B-Evidence', 'I-Evidence', 'B-Concluding Statement', 'I-Concluding Statement']
+
+        self.labels_to_ids = {v:k for k,v in enumerate(self.output_labels)}
+        self.ids_to_labels = {k:v for k,v in enumerate(self.output_labels)}
 
     def get_test_text(self):
         test_names, test_texts = [], []
@@ -68,10 +74,11 @@ class Std_Dataset:
         
         train_text_df = pd.read_csv('train_text_df.csv')
         # train_text_df = get_train_text()
-        # train_text_df.to_csv('train_text_df.csv')
 
         self.train_text_df = self.adding_labels(train_text_df, train_df)
         print(train_text_df.head())
+        train_text_df.to_csv('train_text_df.csv')
+
 
         # Labels
         output_labels = ['O', 'B-Lead', 'I-Lead', 'B-Position', 'I-Position', 'B-Claim', 'I-Claim', 'B-Counterclaim', 'I-Counterclaim', 
