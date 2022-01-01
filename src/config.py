@@ -8,3 +8,5 @@ config = {'model_name': '../kaggle/input/roberta-base/',
          'learning_rate':1e-05,
          'max_grad_norm':10,
          'device': 'cuda' if cuda.is_available() else 'cpu'}
+
+print(f"cuda: {config['device']}")

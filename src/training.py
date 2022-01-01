@@ -17,6 +17,8 @@ class training:
 
 
     def train(self, epoch, model, training_loader):
+
+        model.to(config['device'])
         
         std_data = Std_Dataset()
 
@@ -79,6 +81,61 @@ class training:
         print(f"Training loss epoch: {epoch_loss}")
         print(f"Training accuracy epoch: {tr_accuracy}")
 
+    def valid(self, model, testing_loader):
+        # put model in evaluation mode
+        std_data = Std_Dataset()
+        model.eval()
+        
+        eval_loss, eval_accuracy = 0, 0
+        nb_eval_examples, nb_eval_steps = 0, 0
+        eval_preds, eval_labels = [], []
+        
+        with torch.no_grad():
+            for idx, batch in enumerate(testing_loader):
+                
+                ids = batch['input_ids'].to(config['device'], dtype = torch.long)
+                mask = batch['attention_mask'].to(config['device'], dtype = torch.long)
+                labels = batch['labels'].to(config['device'], dtype = torch.long)
+                
+                loss, eval_logits = model(input_ids=ids, attention_mask=mask, labels=labels,
+                                        return_dict=False)
+                
+                eval_loss += loss.item()
+
+                nb_eval_steps += 1
+                nb_eval_examples += labels.size(0)
+            
+                if idx % 100==0:
+                    loss_step = eval_loss/nb_eval_steps
+                    print(f"Validation loss per 100 evaluation steps: {loss_step}")
+                
+                # compute evaluation accuracy
+                flattened_targets = labels.view(-1) # shape (batch_size * seq_len,)
+                active_logits = eval_logits.view(-1, model.num_labels) # shape (batch_size * seq_len, num_labels)
+                flattened_predictions = torch.argmax(active_logits, axis=1) # shape (batch_size * seq_len,)
+                
+                # only compute accuracy at active labels
+                active_accuracy = labels.view(-1) != -100 # shape (batch_size, seq_len)
+            
+                labels = torch.masked_select(flattened_targets, active_accuracy)
+                predictions = torch.masked_select(flattened_predictions, active_accuracy)
+                
+                eval_labels.extend(labels)
+                eval_preds.extend(predictions)
+                
+                tmp_eval_accuracy = accuracy_score(labels.cpu().numpy(), predictions.cpu().numpy())
+                eval_accuracy += tmp_eval_accuracy
+
+        labels = [std_data.ids_to_labels[id.item()] for id in eval_labels]
+        predictions = [std_data.ids_to_labels[id.item()] for id in eval_preds]
+        
+        eval_loss = eval_loss / nb_eval_steps
+        eval_accuracy = eval_accuracy / nb_eval_steps
+        print(f"Validation Loss: {eval_loss}")
+        print(f"Validation Accuracy: {eval_accuracy}")
+
+        return labels, predictions
+
     def run_training(self):
         training_set, testing_set, test_texts_set, model = gen_token()
 
@@ -102,11 +159,15 @@ class training:
         device = config['device'] # Device
         optimizer = torch.optim.Adam(params=model.parameters(), lr=config['learning_rate'])
 
-        for epoch in range(config['epochs']):
+        # for epoch in range(config['epochs']):
+        for epoch in range(1):
             print(f"Training epoch: {epoch + 1}")
             self.train(epoch, model, training_loader)
+
+        labels, predictions = self.valid(model, testing_loader)
 
 
 if __name__ == "__main__":
     train = training()
     train.run_training()
+    
