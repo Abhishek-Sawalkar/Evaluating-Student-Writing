@@ -3,6 +3,9 @@ import pandas as pd
 import os
 from tqdm import tqdm
 import pickle
+import bz2
+import _pickle as cPickle
+
         
 class Std_Dataset:
     def __init__(self):
@@ -62,7 +65,7 @@ class Std_Dataset:
         
         train_text_df['entities'] = all_entities
 
-        return train_text_df
+        return pd.DataFrame(train_text_df)
 
 
     def dataset(self):
@@ -71,21 +74,18 @@ class Std_Dataset:
 
         self.test_texts = pd.read_csv('test_text.csv')
         test_texts = self.get_test_text()
-        
-        with open('test_text.pkl', 'wb') as f:
-            pickle.dump(test_texts, f)
-        # test_texts.to_csv('test_text.csv')
-        
-        # train_text_df = pd.read_csv('train_text_df.csv')
+        with bz2.BZ2File('test_texts.pbz2', 'w') as f: 
+            cPickle.dump(test_texts, f)       
+
+
         train_text_df = self.get_train_text()
 
         self.train_text_df = self.adding_labels(train_text_df, train_df)
-        print(train_text_df.head())
 
-        with open('train_text_df.pkl', 'wb') as f:
-            pickle.dump(train_text_df, f)
+        with bz2.BZ2File('train_text_df.pbz2', 'w') as f: 
+            cPickle.dump(self.train_text_df, f)
 
-        # train_text_df.to_csv('train_text_df.csv')
+        print(self.train_text_df.head())
 
 
         # Labels

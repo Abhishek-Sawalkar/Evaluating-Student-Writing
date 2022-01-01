@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
 import pickle
+import _pickle as cPickle
+import bz2
+
 from dataset import Std_Dataset
 from config import config
 
@@ -77,21 +80,15 @@ class tokenized_dataset(Dataset):
 
 def gen_token():
 
-    #Creating/Loading train and test dataset using dataset.py
-
     std_data = Std_Dataset()
-    try:
-        train_text_df = pickle.load(open("train_text_df.pkl", "rb"))
-        # train_text_df = pd.read_csv('train_text_df.csv')
-        
-    except:
-        std_data.dataset()
-        train_text_df = pickle.load(open("train_text_df.pkl", "rb"))
-
-    train_text_df = pd.DataFrame(train_text_df)
-    with open('test_text.pkl', 'rb') as f:
-        test_text = pickle.load(f)
+    # Reading Data
+    data = bz2.BZ2File('test_texts.pbz2', 'rb')
+    test_text = cPickle.load(data)
     test_text = pd.DataFrame(test_text)
+
+    data = bz2.BZ2File('train_text_df.pbz2', 'rb')
+    train_text_df = cPickle.load(data)
+    train_text_df = pd.DataFrame(train_text_df)
 
     # Tokenizer and Model
 
