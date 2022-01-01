@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 from tqdm import tqdm
+import pickle
         
 class Std_Dataset:
     def __init__(self):
@@ -69,7 +70,10 @@ class Std_Dataset:
         train_df = pd.read_csv('../kaggle/input/feedback-prize-2021/train.csv')
 
         self.test_texts = pd.read_csv('test_text.csv')
-        # test_texts = self.get_test_text()
+        test_texts = self.get_test_text()
+        
+        with open('test_text.pkl', 'wb') as f:
+            pickle.dump(test_texts, f)
         # test_texts.to_csv('test_text.csv')
         
         # train_text_df = pd.read_csv('train_text_df.csv')
@@ -77,7 +81,11 @@ class Std_Dataset:
 
         self.train_text_df = self.adding_labels(train_text_df, train_df)
         print(train_text_df.head())
-        train_text_df.to_csv('train_text_df.csv')
+
+        with open('train_text_df.pkl', 'wb') as f:
+            pickle.dump(train_text_df, f)
+
+        # train_text_df.to_csv('train_text_df.csv')
 
 
         # Labels
@@ -91,4 +99,3 @@ class Std_Dataset:
 if __name__=="__main__":
     data = Std_Dataset()
     data.dataset()
-

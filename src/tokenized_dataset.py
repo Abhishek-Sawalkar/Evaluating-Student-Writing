@@ -1,17 +1,21 @@
 import numpy as np
 import pandas as pd
+import pickle
 from dataset import Std_Dataset
 from config import config
 
+import torch
 from transformers import RobertaTokenizerFast, RobertaForTokenClassification
 from torch.utils.data import Dataset, DataLoader
 
 class tokenized_dataset(Dataset):
-  def __init__(self, dataframe, tokenizer, max_len):
+  def __init__(self, dataframe, tokenizer, max_len, model, std_data):
         self.len = len(dataframe)
-        self.data = dataframe
+        self.data = pd.DataFrame(dataframe)
         self.tokenizer = tokenizer
         self.max_len = max_len
+        self.model = model
+        self.std_data = std_data
 
   def __len__(self):
         return self.len
@@ -19,7 +23,11 @@ class tokenized_dataset(Dataset):
   def __getitem__(self, index):
         # step 1: get the sentence and word labels 
         sentence = self.data.text[index]
-        word_labels = self.data.entities[index]
+        word_labels = list(self.data.entities[index])
+        # print(f'DT:\n {self.data.entities.dtype}')
+        
+        wl = set(word_labels)
+        # print(f"word_labels: {word_labels[0]}")
 
         # step 2: use tokenizer to encode sentence (includes padding/truncation up to max length)
         # BertTokenizerFast provides a handy "return_offsets_mapping" functionality for individual tokens
@@ -33,7 +41,10 @@ class tokenized_dataset(Dataset):
         
         # step 3: create token labels only for first word pieces of each tokenized word
 #         pdb.set_trace()
-        labels = [labels_to_ids[label] for label in word_labels] 
+        labels_to_ids = self.std_data.labels_to_ids
+        # print(f'labels_to_ids:\n {(labels_to_ids)}')
+        labels = [ labels_to_ids[label] for label in word_labels] 
+        
         # code based on https://huggingface.co/transformers/custom_datasets.html#tok-ner
         # create an empty array of -100 of length max_length
         encoded_labels = np.ones(len(encoding["offset_mapping"]), dtype=int) * -100
@@ -65,11 +76,25 @@ class tokenized_dataset(Dataset):
 
 
 def gen_token():
-    train_text_df = pd.read_csv('train_text_df.csv')
-    test_text = pd.read_csv('test_text.csv')
+
+    #Creating/Loading train and test dataset using dataset.py
+
+    std_data = Std_Dataset()
+    try:
+        train_text_df = pickle.load(open("train_text_df.pkl", "rb"))
+        # train_text_df = pd.read_csv('train_text_df.csv')
+        
+    except:
+        std_data.dataset()
+        train_text_df = pickle.load(open("train_text_df.pkl", "rb"))
+
+    train_text_df = pd.DataFrame(train_text_df)
+    with open('test_text.pkl', 'rb') as f:
+        test_text = pickle.load(f)
+    test_text = pd.DataFrame(test_text)
 
     # Tokenizer and Model
-    std_data = Std_Dataset()
+
     tokenizer = RobertaTokenizerFast.from_pretrained(config['model_name'])
     model = RobertaForTokenClassification.from_pretrained(config['model_name'], num_labels=len(std_data.output_labels))
 
@@ -85,32 +110,31 @@ def gen_token():
     print("TEST Dataset: {}".format(test_dataset.shape))
 
     # Appying the class
-    training_set = tokenized_dataset(train_dataset, tokenizer, config['max_length'])
-    testing_set = tokenized_dataset(test_dataset, tokenizer, config['max_length'])
+    training_set = tokenized_dataset(train_dataset, tokenizer, config['max_length'], model, std_data)
+    testing_set = tokenized_dataset(test_dataset, tokenizer, config['max_length'], model, std_data)
 
     # Params for dividing the dataset into batches
-    train_params = {'batch_size': config['train_batch_size'],
-                'shuffle': True,
-                'num_workers': 1,
-                'pin_memory':True
-                }
+    # train_params = {'batch_size': config['train_batch_size'],
+    #             'shuffle': True,
+    #             'num_workers': 1,
+    #             'pin_memory':True
+    #             }
 
-    test_params = {'batch_size': config['valid_batch_size'],
-                    'shuffle': True,
-                    'num_workers': 1,
-                    'pin_memory':True
-                    }
+    # test_params = {'batch_size': config['valid_batch_size'],
+    #                 'shuffle': True,
+    #                 'num_workers': 1,
+    #                 'pin_memory':True
+    #                 }
 
-    training_loader = DataLoader(training_set, **train_params)
-    testing_loader = DataLoader(testing_set, **test_params)
+    # training_loader = DataLoader(training_set, **train_params)
+    # testing_loader = DataLoader(testing_set, **test_params)
 
     # For the hidden test data
-    test_texts_set = tokenized_dataset(test_text, tokenizer, config['max_length'])
-    test_texts_loader = DataLoader(test_texts_set, **test_params)
+    test_texts_set = tokenized_dataset(test_text, tokenizer, config['max_length'], model, std_data)
+    # test_texts_loader = DataLoader(test_texts_set, **test_params)
 
-    return training_loader, testing_loader, test_texts_loader
+    return training_set, testing_set, test_texts_set, model
 
 
 if __name__=="__main__":
         gen_token()
-    
