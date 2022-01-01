@@ -164,6 +164,8 @@ class training:
             print(f"Training epoch: {epoch + 1}")
             self.train(epoch, model, training_loader)
 
+        torch.save(model.state_dict(), 'model.bin')
+
         labels, predictions = self.valid(model, testing_loader)
 
 
