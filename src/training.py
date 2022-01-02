@@ -159,8 +159,8 @@ class training:
         device = config['device'] # Device
         optimizer = torch.optim.Adam(params=model.parameters(), lr=config['learning_rate'])
 
-        # for epoch in range(config['epochs']):
-        for epoch in range(1):
+        for epoch in range(config['epochs']):
+        # for epoch in range(1):
             print(f"Training epoch: {epoch + 1}")
             self.train(epoch, model, training_loader)
 
